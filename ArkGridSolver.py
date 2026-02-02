@@ -69,35 +69,35 @@ def solve_logic(cores, gems, targets, priorities, callback, timeout=120, stop_ch
         gem_data, available_qty = gem_types[type_idx]
         wp, pts = gem_data[0], gem_data[1]
 
-         # OPTIMIZATION: Calculate remaining points potential from future gems
-        remaining_pts_potential = sum(gem_types[j][0][1] * gem_types[j][1] for j in range(type_idx + 1, len(gem_types)))
+        #  # OPTIMIZATION: Calculate remaining points potential from future gems
+        # remaining_pts_potential = sum(gem_types[j][0][1] * gem_types[j][1] for j in range(type_idx + 1, len(gem_types)))
         
-        # OPTIMIZATION: Early exit if we can't possibly meet targets
-        can_meet_targets = True
-        for i in range(num_cores):
-            if pt_sums[i] + remaining_pts_potential < targets[i]:
-                can_meet_targets = False
-                break
+        # # OPTIMIZATION: Early exit if we can't possibly meet targets
+        # can_meet_targets = True
+        # for i in range(num_cores):
+        #     if pt_sums[i] + remaining_pts_potential < targets[i]:
+        #         can_meet_targets = False
+        #         break
         
-        if not can_meet_targets:
-            pruned_count = 1
-            for idx in range(type_idx, len(gem_types)):
-                _, qty = gem_types[idx]
-                # Estimate: for each gem type, we have roughly (qty+1)^3 ways to distribute
-                # This is a rough upper bound
-                pruned_count *= min((qty+1) ** num_cores, 1000) #cap to prevent overflow
-                if pruned_count > 1e9: # prevent overflow
-                    pruned_count = int(1e9)
-                    break
+        # if not can_meet_targets:
+        #     pruned_count = 1
+        #     for idx in range(type_idx, len(gem_types)):
+        #         _, qty = gem_types[idx]
+        #         # Estimate: for each gem type, we have roughly (qty+1)^3 ways to distribute
+        #         # This is a rough upper bound
+        #         pruned_count *= min((qty+1) ** num_cores, 1000) #cap to prevent overflow
+        #         if pruned_count > 1e9: # prevent overflow
+        #             pruned_count = int(1e9)
+        #             break
 
-            combinations_checked += pruned_count
+        #     combinations_checked += pruned_count
 
-            #update UI if enough time passed
-            current_time = time.time()
-            if current_time - last_callback_time > 0.1:
-                callback(unique_combinations_count, None, None, None, progress_update = True, checked = combinations_checked)
-                last_callback_time = current_time
-            return
+            # #update UI if enough time passed
+            # current_time = time.time()
+            # if current_time - last_callback_time > 0.1:
+            #     callback(unique_combinations_count, None, None, None, progress_update = True, checked = combinations_checked)
+            #     last_callback_time = current_time
+            # return
         
         # OPTIMIZATION: Calculate max we can place based on both slot and WP constraints
         max_possible = [
@@ -228,8 +228,8 @@ class ArkGridGUI:
         timeout_frame.grid(row=20, column=0, columnspan=4, pady=2)
         tk.Label(timeout_frame, text="Max Runtime (seconds):", font=('Arial', 9)).pack(side="left", padx=5)
         self.timeout_var = tk.IntVar(value=120)
-        tk.Spinbox(timeout_frame, from_=10, to=3600, textvariable=self.timeout_var, width=6).pack(side="left", padx=5)
-        tk.Label(timeout_frame, text="(10-3600s, default: 120s)", font=('Arial', 8, 'italic'), fg="gray").pack(side="left")
+        tk.Spinbox(timeout_frame, from_=10, to=28800, textvariable=self.timeout_var, width=6).pack(side="left", padx=5)
+        tk.Label(timeout_frame, text="(10-28800s (8 hours), default: 120s)", font=('Arial', 8, 'italic'), fg="gray").pack(side="left")
 
         tk.Label(root, text="Targets are always met first, these weights will just set which combination is shown", font=('Arial', 8, "italic"),fg="gray").grid(row=21, columnspan=4)
 
@@ -239,13 +239,13 @@ class ArkGridGUI:
         adv_f = tk.LabelFrame(root, text="Scondary stat weights", fg="blue"); adv_f.grid(row=23, column=0, columnspan=4, padx=10, sticky="ew")
         
         # New Legend Label
-        tk.Label(adv_f, text="(Scale: 10 = Highest, 0 = Not prioritized)", font=("Arial", 8, "italic"), fg="gray").grid(row=0, column=0, columnspan=4, pady=2)
+        tk.Label(adv_f, text="(Scale: 5 = Highest, 0 = Not prioritized)", font=("Arial", 8, "italic"), fg="gray").grid(row=0, column=0, columnspan=4, pady=2)
         
         self.prios = {}
         r, c = 1, 0 # Started traits at row 1 to make room for legend
         for trait in self.trait_colors.keys():
             tk.Label(adv_f, text=trait[:12], font=("Arial", 10)).grid(row=r, column=c, sticky="w")
-            v = tk.IntVar(value=1); tk.Spinbox(adv_f, from_=0, to=10, textvariable=v, width=2).grid(row=r, column=c+1, padx=2)
+            v = tk.IntVar(value=0); tk.Spinbox(adv_f, from_=0, to=5, textvariable=v, width=2).grid(row=r, column=c+1, padx=2)
             self.prios[trait] = v
             c += 2
             if c > 3: c = 0; r += 1
@@ -408,9 +408,6 @@ class ArkGridGUI:
         self.total_estimate = total_text
         self.combo_label.config(text=f"Checked: 0 | Valid: 0")
         self.update_timer()
-
-
-
         p = {k: v.get() for k, v in self.prios.items()}
         timeout = self.timeout_var.get()  
         t = threading.Thread(target=solve_logic, args=([c.get() for c in self.core_vars], list(filtered_gems), [t.get() for t in self.target_vars], p, self.show_res, timeout, lambda: self.stop_requested))
