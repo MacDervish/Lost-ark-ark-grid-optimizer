@@ -69,15 +69,15 @@ def solve_logic(cores, gems, targets, priorities, callback, timeout=120, stop_ch
         gem_data, available_qty = gem_types[type_idx]
         wp, pts = gem_data[0], gem_data[1]
 
-        #  # OPTIMIZATION: Calculate remaining points potential from future gems
-        # remaining_pts_potential = sum(gem_types[j][0][1] * gem_types[j][1] for j in range(type_idx + 1, len(gem_types)))
+         # OPTIMIZATION: Calculate remaining points potential from future gems
+        remaining_pts_potential = sum(gem_types[j][0][1] * gem_types[j][1] for j in range(type_idx + 1, len(gem_types)))
         
-        # # OPTIMIZATION: Early exit if we can't possibly meet targets
-        # can_meet_targets = True
-        # for i in range(num_cores):
-        #     if pt_sums[i] + remaining_pts_potential < targets[i]:
-        #         can_meet_targets = False
-        #         break
+        # OPTIMIZATION: Early exit if we can't possibly meet targets
+        can_meet_targets = True
+        for i in range(num_cores):
+            if pt_sums[i] + remaining_pts_potential < targets[i]:
+                can_meet_targets = False
+                break
         
         # if not can_meet_targets:
         #     pruned_count = 1
@@ -397,15 +397,15 @@ class ArkGridGUI:
         self.current_checked_count = 0
 
         #estimates total combinations
-        estimated_total = self.calculate_total_combinations(filtered_gems)
-        if estimated_total > 1e9:
-            total_text = f"{estimated_total/1e9:.1f}e9"
-        elif estimated_total > 1e6:
-            total_text = f"{estimated_total/1e6:.1f}e6"
-        else:
-            total_text = f"{estimated_total:,}"
+        # estimated_total = self.calculate_total_combinations(filtered_gems)
+        # if estimated_total > 1e9:
+        #     total_text = f"{estimated_total/1e9:.1f}e9"
+        # elif estimated_total > 1e6:
+        #     total_text = f"{estimated_total/1e6:.1f}e6"
+        # else:
+        #     total_text = f"{estimated_total:,}"
 
-        self.total_estimate = total_text
+        #self.total_estimate = total_text
         self.combo_label.config(text=f"Checked: 0 | Valid: 0")
         self.update_timer()
         p = {k: v.get() for k, v in self.prios.items()}
@@ -465,9 +465,11 @@ class ArkGridGUI:
         win = tk.Toplevel(self.root); win.title("Optimal Grid Solution" + (" (Stopped early)" if self.stop_requested else ""))
         tk.Label(win, text="Build Summary\n", font=("Arial", 12, "bold")).pack()
         tk.Label(win, text=f"Priority Score: {score} | Valid Combinations: {count}", font=("Arial", 10, "bold")).pack(pady=5)
+        tk.Label(win, text=f"Completed in: {elapsed: .2f}s | Checked Combinations: {checked_text}", font=("Arial", 10, "bold")).pack(pady=5)
         main = tk.Frame(win); main.pack(padx=20, pady=10)
         totals = {}
         summary_text = f"BUILD SUMMARY\n"
+        summary_text += f"\nCompleted in: {elapsed: .2f}s \nChecked: {checked_text}\nValid Combinations: {count}\n"
         for i, name in enumerate(["SUN", "MOON", "STAR"]):
             f = tk.LabelFrame(main, text=name, padx=10, pady=10, labelanchor="n"); f.grid(row=0, column=i, padx=5, sticky="n")
             p_sum = sum(g['pts'] for g in assign[i])
