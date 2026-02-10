@@ -139,7 +139,7 @@ class ArkGridGUI:
         self.root = root
         self.root.title("Lost Ark: Ark Grid Optimizer")
         self.gems = []
-        self.trait_colors = {"Atk Power": "#e68a00", "Brand Power": "#6600cc",  "Boss Dmg": "#b30000", "Ally Atk Enh": "#008000", "Add Dmg": "#0066cc", "Ally Dmg Enh": "#008080"}
+        self.trait_colors = {"Atk Power": "#e68a00", "Boss Dmg": "#b30000", "Add Dmg": "#0066cc", "Brand Power": "#6600cc",  "Ally Atk Enh": "#008000", "Ally Dmg Enh": "#008080"}
         self.colors = {"Ancient": "#FFFACD", "Relic": "#CF0000", "Legendary": "#FFD700", "Epic": "#A335EE"}
         self.effects_list = ["None"] + list(self.trait_colors.keys())
         self.levels_list = ["1", "2", "3", "4", "5"]
@@ -248,7 +248,7 @@ class ArkGridGUI:
             v = tk.IntVar(value=0); tk.Spinbox(adv_f, from_=0, to=5, textvariable=v, width=2).grid(row=r, column=c+1, padx=2)
             self.prios[trait] = v
             c += 2
-            if c > 3: c = 0; r += 1
+            if c > 5: c = 0; r += 1
         
         # --- FILE MANAGEMENT ---
         
