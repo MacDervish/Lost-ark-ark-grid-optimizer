@@ -9,6 +9,6 @@ You can run the program locally immediately if you have python on your pc alread
   - A web client is currently in development
 
 If you dont have python installed follow these instructions:
-Go to https://www.python.org/downloads/release/python-3143/
-Scroll down to the bottom of this page and click on the installer for your OS
-Read the instructions then download the installer
+- Go to https://www.python.org/downloads/release/python-3143/
+- Scroll down to the bottom of this page and click on the installer for your OS
+- Read the instructions then download the installer
