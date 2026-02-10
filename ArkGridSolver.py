@@ -189,9 +189,23 @@ class ArkGridGUI:
         tk.Label(root, text="Step 2: Astrogems", font=('Arial', 10, 'bold')).grid(row=12, columnspan=4, pady=5)
         inp = tk.Frame(root); inp.grid(row=13, column=0, columnspan=4)
         self.gem_wp, self.gem_pts, self.gem_qty = tk.IntVar(value=3), tk.IntVar(value=5), tk.IntVar(value=1)
-        for lab, var in [("WP:", self.gem_wp), ("Pts:", self.gem_pts), ("Qty:", self.gem_qty)]:
-            tk.Label(inp, text=lab).pack(side="left", padx=2)
-            tk.Spinbox(inp, from_=1, to=50, textvariable=var, width=3).pack(side="left", padx=2)
+        # for lab, var in [("WP:", self.gem_wp), ("Pts:", self.gem_pts), ("Qty:", self.gem_qty)]:
+        #     tk.Label(inp, text=lab).pack(side="left", padx=2)
+        #     tk.Spinbox(inp, from_=1, to=50, textvariable=var, width=3).pack(side="left", padx=2)
+        
+        # WP
+        tk.Label(inp, text="WP:").pack(side="left", padx=2)
+        tk.Spinbox(inp, from_=3, to=9, textvariable=self.gem_wp, width=3).pack(side="left", padx=2)
+
+        # Pts
+        tk.Label(inp, text="Pts:").pack(side="left", padx=2)
+        tk.Spinbox(inp, from_=1, to=5, textvariable=self.gem_pts, width=3).pack(side="left", padx=2)
+        
+        # Quantity
+        tk.Label(inp, text="Qty:").pack(side="left", padx=2)
+        tk.Spinbox(inp, from_=1, to=10, textvariable=self.gem_qty, width=3).pack(side="left", padx=2)
+        
+
         tk.Button(root, text="Add Gem(s)", command=self.add_gem, bg="#e1e1e1").grid(row=14, column=1, pady=5)
         tk.Button(root, text="Delete Selected", command=self.delete_gem).grid(row=14, column=2, pady=5)
 
@@ -236,7 +250,7 @@ class ArkGridGUI:
         
 
 
-        adv_f = tk.LabelFrame(root, text="Scondary stat weights", fg="blue"); adv_f.grid(row=23, column=0, columnspan=4, padx=10, sticky="ew")
+        adv_f = tk.LabelFrame(root, text="Secondary stat weights", fg="blue"); adv_f.grid(row=23, column=0, columnspan=4, padx=10, sticky="ew")
         
         # New Legend Label
         tk.Label(adv_f, text="(Scale: 5 = Highest, 0 = Not prioritized)", font=("Arial", 8, "italic"), fg="gray").grid(row=0, column=0, columnspan=4, pady=2)
