@@ -13,8 +13,10 @@ def solve_logic(cores, gems, targets, priorities, callback, timeout=2, stop_chec
         gem_fingerprints.append((g['wp'], g['pts'], g['eff1'], g['eff1_lvl'], g['eff2'], g['eff2_lvl']))
     
     counts = Counter(gem_fingerprints)
+
     # Sort by points first (highest points = most valuable for meeting targets)
     distinct_gems = sorted(counts.keys(), key=lambda x: (-x[1], -x[0]))
+    
     gem_types = [(g, counts[g]) for g in distinct_gems]
 
     best_assignment = None
@@ -28,12 +30,21 @@ def solve_logic(cores, gems, targets, priorities, callback, timeout=2, stop_chec
     start_time = time.time()
     last_callback_time = start_time
 
+    # OPTIMIZATION: Memoization for subproblems
+    memo = {}
+
 
     def backtrack(type_idx):
         nonlocal best_assignment, max_priority_score, unique_combinations_count, combinations_checked, last_callback_time
         if time.time() - start_time > timeout*60: return 
 
         if stop_check and stop_check(): return
+        
+        # OPTIMIZATION: Check memo
+        state_key = (type_idx, tuple(slot_counts), tuple(pt_sums), tuple(wp_sums))
+        if state_key in memo:
+            return
+        memo[state_key] = True
 
         if type_idx == len(gem_types):
             combinations_checked += 1
@@ -69,41 +80,28 @@ def solve_logic(cores, gems, targets, priorities, callback, timeout=2, stop_chec
         gem_data, available_qty = gem_types[type_idx]
         wp, pts = gem_data[0], gem_data[1]
 
-         # OPTIMIZATION: Calculate remaining points potential from future gems
-        remaining_pts_potential = sum(gem_types[j][0][1] * gem_types[j][1] for j in range(type_idx + 1, len(gem_types)))
         
-        # OPTIMIZATION: Early exit if we can't possibly meet targets
-        can_meet_targets = True
-        for i in range(num_cores):
-            if pt_sums[i] + remaining_pts_potential < targets[i]:
-                can_meet_targets = False
-                break
+
+        #  OPTIMIZATION: Calculate remaining points potential from future gems
+        # remaining_pts_potential = sum(gem_types[j][0][1] * gem_types[j][1] for j in range(type_idx + 1, len(gem_types)))
+        
+        # Early exit if we can't possibly meet targets
+        # can_meet_targets = True
+        # for i in range(num_cores):
+        #     if pt_sums[i] + remaining_pts_potential < targets[i]:
+        #         can_meet_targets = False
+        #         break
         
         # if not can_meet_targets:
-        #     pruned_count = 1
-        #     for idx in range(type_idx, len(gem_types)):
-        #         _, qty = gem_types[idx]
-        #         # Estimate: for each gem type, we have roughly (qty+1)^3 ways to distribute
-        #         # This is a rough upper bound
-        #         pruned_count *= min((qty+1) ** num_cores, 1000) #cap to prevent overflow
-        #         if pruned_count > 1e9: # prevent overflow
-        #             pruned_count = int(1e9)
-        #             break
-
-        #     combinations_checked += pruned_count
-
-            # #update UI if enough time passed
-            # current_time = time.time()
-            # if current_time - last_callback_time > 0.1:
-            #     callback(unique_combinations_count, None, None, None, progress_update = True, checked = combinations_checked)
-            #     last_callback_time = current_time
-            # return
+        #     return
         
-        # OPTIMIZATION: Calculate max we can place based on both slot and WP constraints
+
+        # Calculate max we can place based on both slot and WP constraints
         max_possible = [
             min(available_qty, 4 - slot_counts[i], (cores[i] - wp_sums[i]) // wp if wp > 0 else available_qty)
             for i in range(num_cores)
         ]
+
 
 
         for q0 in range(max_possible[0] + 1):
@@ -133,6 +131,9 @@ def solve_logic(cores, gems, targets, priorities, callback, timeout=2, stop_chec
 
     backtrack(0)
     callback(unique_combinations_count, best_assignment, max_priority_score, globally_useful_fingerprints, progress_update=False, checked = combinations_checked)
+
+    
+
 
 class ArkGridGUI:
     def __init__(self, root):
@@ -297,11 +298,6 @@ class ArkGridGUI:
             if c > 5: c = 0; r += 1
         
         
-        #add a timer widget
-        #self.timer_label = tk.Label(root,text = "Time: 0.00s", font=('Arial',10))
-        #self.timer_label.grid(row=19, columnspan=4, pady=5)
-
-
         #solve button
 
         self.solve_btn = tk.Button(root, text="SOLVE OPTIMAL GRID", bg="green", fg="white", font=('Arial', 10, 'bold'), command=self.start_solve)
@@ -372,7 +368,6 @@ class ArkGridGUI:
             self.gem_listbox.insert(tk.END, f"[{g['wp']}W / {g['pts']}P] {type_tag}      {e}      {h}")
 
     def sort(self):
-        print("sort")
         self.gems = sorted(self.gems, key= lambda x: (x['wp'], -x['pts']))
         self.refresh_list()
 
@@ -427,16 +422,7 @@ class ArkGridGUI:
         self.current_combo_count = 0
         self.current_checked_count = 0
 
-        #estimates total combinations
-        # estimated_total = self.calculate_total_combinations(filtered_gems)
-        # if estimated_total > 1e9:
-        #     total_text = f"{estimated_total/1e9:.1f}e9"
-        # elif estimated_total > 1e6:
-        #     total_text = f"{estimated_total/1e6:.1f}e6"
-        # else:
-        #     total_text = f"{estimated_total:,}"
-
-        #self.total_estimate = total_text
+        
         self.combo_label.config(text=f"Checked: 0 | Valid: 0")
         self.update_timer()
         p = {k: v.get() for k, v in self.prios.items()}
@@ -472,7 +458,11 @@ class ArkGridGUI:
         #final results
         self.timer_running = False
         elapsed = time.time() - self.start_time
-        self.timer_label.config(text=f"Completed in: {elapsed: .2f}s")
+        seconds = elapsed
+        minutes, seconds = divmod(seconds, 60)
+        hours, minutes = divmod(minutes, 60)
+        #self.timer_label.config(text=f"Completed in: {elapsed: .2f}s")
+        self.timer_label.config(text=f"Completed in: {hours}H, {minutes}M, {seconds: .2f}S")
 
         #format final checked count
         if checked > 1e9:
@@ -509,7 +499,6 @@ class ArkGridGUI:
             wp_sum=0
             for g in assign[i]:
                 wp_sum+=g['wp']
-            #print(wp_sum)
             tk.Label(f, text=f"WP used: {wp_sum} WP",fg="red", font=("Arial",9,"bold")).pack()
             summary_text += f"\n--- {name} ({p_sum} Pts, {wp_sum} WP used) ---\n"
             for g in assign[i]:
@@ -548,30 +537,6 @@ class ArkGridGUI:
             elapsed = time.time()-self.start_time
             self.timer_label.config(text=f"Time: {elapsed:.2f}s")
             self.root.after(50, self.update_timer)
-
-    def calculate_total_combinations(self, gems, num_cores=3, max_slots=4):
-        """Calculate total possible ways to distribute gems across cores (approximation)"""
-
-        # Count gem quantities
-        gem_counts = Counter()
-        for g in gems:
-            fingerprint = (g['wp'], g['pts'], g['eff1'], g['eff1_lvl'], g['eff2'], g['eff2_lvl'])
-            gem_counts[fingerprint] += 1
-
-        total = 1
-        for gem_type, quantity in gem_counts.items():
-            # Same approximation as pruning: (qty+1)^num_cores ways to distribute
-            # This accounts for each core getting 0 to qty of this gem type
-            # Cap individual contributions to prevent overflow
-            ways = min((quantity + 1) ** num_cores, int(1e9))
-            total *= ways
-            
-            # Prevent total overflow
-            if total > 1e12:
-                return int(1e12)
-
-        return int(total)
-
 
 if __name__ == "__main__":
     root = tk.Tk(); ArkGridGUI(root); root.mainloop()
