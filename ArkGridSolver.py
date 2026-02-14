@@ -6,7 +6,7 @@ import time
 from collections import Counter
 
 # --- SOLVER LOGIC ---
-def solve_logic(cores, gems, targets, priorities, callback, timeout=120, stop_check=None):
+def solve_logic(cores, gems, targets, priorities, callback, timeout=2, stop_check=None):
     num_cores = len(cores)
     gem_fingerprints = []
     for g in gems:
@@ -31,7 +31,7 @@ def solve_logic(cores, gems, targets, priorities, callback, timeout=120, stop_ch
 
     def backtrack(type_idx):
         nonlocal best_assignment, max_priority_score, unique_combinations_count, combinations_checked, last_callback_time
-        if time.time() - start_time > timeout: return 
+        if time.time() - start_time > timeout*60: return 
 
         if stop_check and stop_check(): return
 
@@ -151,13 +151,13 @@ class ArkGridGUI:
         self.current_checked_count = 0
         self.stop_requested = False
 
-        next_row=0
+        current_row=0
 
         # --- CORES ---
-        tk.Label(root, text="Step 1: Core Configuration", font=('Arial', 10, 'bold')).grid(row=next_row, columnspan=4, pady=5) ; next_row+=1   
+        tk.Label(root, text="Step 1: Core Configuration", font=('Arial', 10, 'bold')).grid(row=current_row, columnspan=4, pady=5) ; current_row+=1   
             # --- ORDER/CHAOS DROPDOWN ---
         mode_frame = tk.Frame(root)
-        mode_frame.grid(row=next_row, column=0, columnspan=4, pady=5); next_row+=1
+        mode_frame.grid(row=current_row, column=0, columnspan=4, pady=5); current_row+=1
         tk.Label(mode_frame, text="Currently Using:", font=('Arial', 9, 'bold')).pack(side="left", padx=5)
         self.gem_mode = tk.StringVar(value="Order Cores")
         mode_dropdown = ttk.Combobox(mode_frame, textvariable=self.gem_mode, values=["Order Cores", "Chaos Cores"], width=15, state="readonly")
@@ -165,12 +165,12 @@ class ArkGridGUI:
         self.core_vars, self.target_vars = [tk.IntVar(value=17) for _ in range(3)], [tk.IntVar(value=17) for _ in range(3)]
         self.rarity_buttons, self.target_buttons_dict = [], [{} for _ in range(3)]
         for i, name in enumerate(["Sun Core", "Moon Core", "Star Core"]):
-            r_frame = tk.Frame(root); r_frame.grid(row=i*3+next_row, column=0, columnspan=4, pady=2)
+            r_frame = tk.Frame(root); r_frame.grid(row=i*3+current_row, column=0, columnspan=4, pady=2)
             tk.Label(r_frame, text=f"{name}:", width=10).pack(side="left")
             btns = []
             
             
-            t_frame = tk.Frame(root); t_frame.grid(row=i*3+next_row+1, column=0, columnspan=4)
+            t_frame = tk.Frame(root); t_frame.grid(row=i*3+current_row+1, column=0, columnspan=4)
             tk.Label(t_frame, text="Target:", width=10).pack(side="left")
             for g in [20, 19, 18, 17, 14, 10, 0]:
                 btn = tk.Button(t_frame, text=str(g), width=3, command=lambda val=g, idx=i: self.set_target(idx, val))
@@ -178,7 +178,7 @@ class ArkGridGUI:
 
             rarities = [("Ancient", 17), ("Relic", 15), ("Legendary", 12), ("Epic", 9)]
             cap_label=tk.Label(root, text="Capacity: ")
-            cap_label.grid(row=i*3+next_row+2, column=0, sticky= "E")
+            cap_label.grid(row=i*3+current_row+2, column=0, sticky= "E")
             for r_n, val in rarities:
                 btn = tk.Button(r_frame, text=r_n, bg=self.colors[r_n], width=8, command=lambda n=r_n, v=val, idx=i, lbl=cap_label: self.update_rarity(idx, n, v,lbl))
                 
@@ -186,11 +186,13 @@ class ArkGridGUI:
             self.rarity_buttons.append(btns)
             
             self.update_rarity(i, "Relic", 15, cap_label)
-        next_row=11
+        current_row=11
 
         # --- GEMS ---
-        tk.Label(root, text="Step 2: Astrogems", font=('Arial', 10, 'bold')).grid(row=next_row, columnspan=4, pady=5); next_row+=1
-        inp = tk.LabelFrame(root, text="Manual Input"); inp.grid(row=next_row, column=0, columnspan=1,padx=10, sticky="ew")
+        tk.Label(root, text="Step 2: Astrogems", font=('Arial', 10, 'bold')).grid(row=current_row, columnspan=4, pady=5); current_row+=1
+
+        # -- Manual Input --
+        inp = tk.LabelFrame(root, text="Manual Input"); inp.grid(row=current_row, column=0, columnspan=1,padx=10, sticky="ew")
         self.gem_wp, self.gem_pts, self.gem_qty = tk.IntVar(value=3), tk.IntVar(value=5), tk.IntVar(value=1)
         
         # add wp, pt, and qty input arrows
@@ -208,22 +210,18 @@ class ArkGridGUI:
         tk.Spinbox(arrow_frame, from_=1, to=10, textvariable=self.gem_qty, width=3).pack(side="left", padx=2)
         
         btn_i = tk.Frame(inp); btn_i.pack(pady=5)
-
-        #tk.Button(root, text="Add Gem(s)", command=self.add_gem, bg="#e1e1e1").grid(row=14, column=0, pady=5)
         tk.Button(btn_i, text="Add Gem(s)", command=self.add_gem).pack(side="left", padx=5)
-        #tk.Button(root, text="Delete Selected", command=self.delete_gem).grid(row=14, column=1, pady=5)
 
-        image_input= tk.LabelFrame(root, text="Screenshot Input"); image_input.grid(row=next_row, column=1, columnspan=5,padx=5, sticky="w"); next_row+=1
-        tk.Label(image_input, text="test").pack(side="left")
-
-
+        # -- Screenshot Input --
+        image_input= tk.LabelFrame(root, text="Screenshot Input"); image_input.grid(row=current_row, column=1, columnspan=5,padx=5, sticky="w"); current_row+=1
+        tk.Label(image_input, text="test text").pack(side="left")
 
 
 
 
 
 
-        eff_frame = tk.LabelFrame(root, text="Gem Details (Edit Selected)"); eff_frame.grid(row=next_row, column=0, columnspan=4, padx=10, pady=5, sticky="ew"); next_row+=1
+        eff_frame = tk.LabelFrame(root, text="Gem Details (Edit Selected)"); eff_frame.grid(row=current_row, column=0, columnspan=4, padx=10, pady=5, sticky="ew"); current_row+=1
         self.eff1_var, self.eff1_lvl_var = tk.StringVar(value="None"), tk.StringVar(value="1")
         self.eff2_var, self.eff2_lvl_var = tk.StringVar(value="None"), tk.StringVar(value="1")
         self.gem_type_var = tk.StringVar(value="None")
@@ -244,14 +242,14 @@ class ArkGridGUI:
         tk.Button(btn_f, text="Clear Gem Effects", command=self.clear_gem_eff).pack(side="left", padx=5)
         tk.Button(btn_f, text="Delete Selected", command=self.delete_gem).pack(side="left",padx=5)
 
-        self.gem_listbox = tk.Listbox(root, height=8, width=75, exportselection=False); self.gem_listbox.grid(row=next_row, column=0, columnspan=4, pady=5); next_row+=1
+        self.gem_listbox = tk.Listbox(root, height=8, width=75, exportselection=False); self.gem_listbox.grid(row=current_row, column=0, columnspan=4, pady=5); current_row+=1
         self.gem_listbox.bind('<<ListboxSelect>>', self.on_select)
 
-        tk.Label(root, text="Red = Unused in all combinations", font=('Arial', 9, 'italic'),fg="red").grid(row=next_row, columnspan=4); next_row+=1
+        tk.Label(root, text="Red = Unused in all combinations", font=('Arial', 9, 'italic'),fg="red").grid(row=current_row, columnspan=4); current_row+=1
 
 # --- FILE MANAGEMENT ---
         
-        file_f = tk.Frame(root); file_f.grid(row=next_row, column=0, columnspan=4, pady=5); next_row+=1
+        file_f = tk.Frame(root); file_f.grid(row=current_row, column=0, columnspan=4, pady=5); current_row+=1
         tk.Button(file_f, text="Sort Gems?", command=self.sort).pack(side="left",padx=5)
         tk.Button(file_f, text="Save Gems", command=self.save_file).pack(side="left", padx=5)
         tk.Button(file_f, text="Load Gems", command=self.load_file).pack(side="left", padx=5)
@@ -261,19 +259,19 @@ class ArkGridGUI:
         
         # --- SECONDARY STAT WEIGHTING ---
         
-        tk.Label(root, text="Step 3: Additional Settings", font=('Arial', 10, 'bold')).grid(row=next_row, columnspan=4, pady=5); next_row+=1
+        tk.Label(root, text="Step 3: Additional Settings", font=('Arial', 10, 'bold')).grid(row=current_row, columnspan=4, pady=5); current_row+=1
 
         timeout_frame = tk.Frame(root)
-        timeout_frame.grid(row=next_row, column=0, columnspan=4, pady=2); next_row+=1
-        tk.Label(timeout_frame, text="Max Runtime (seconds):", font=('Arial', 9)).pack(side="left", padx=5)
-        self.timeout_var = tk.IntVar(value=120)
-        tk.Spinbox(timeout_frame, from_=10, to=28800, textvariable=self.timeout_var, width=6).pack(side="left", padx=5)
-        tk.Label(timeout_frame, text="(10-28800s (8 hours), default: 120s)", font=('Arial', 8, 'italic'), fg="gray").pack(side="left")
+        timeout_frame.grid(row=current_row, column=0, columnspan=4, pady=2); current_row+=1
+        tk.Label(timeout_frame, text="Max Runtime (minutes):", font=('Arial', 9)).pack(side="left", padx=5)
+        self.timeout_var = tk.IntVar(value=2)
+        tk.Spinbox(timeout_frame, from_=2, to=480, textvariable=self.timeout_var, width=6).pack(side="left", padx=5)
+        tk.Label(timeout_frame, text="(2-480m (8 hours), default: 2m)", font=('Arial', 8, 'italic'), fg="gray").pack(side="left")
 
         
         #add a widget that shows elapsed time and combinations found
         status_frame = tk.Frame(root)
-        status_frame.grid(row=next_row, columnspan=4, pady=5); next_row+=1
+        status_frame.grid(row=current_row, columnspan=4, pady=5); current_row+=1
         self.timer_label = tk.Label(status_frame, text="Time: 0.00s", font= ('Arial', 10))
         self.timer_label.pack(side="left", padx=10)
         self.combo_label = tk.Label(status_frame, text="Checked: 0 | Valid: 0", font =('Arial',10))
@@ -281,9 +279,9 @@ class ArkGridGUI:
         
 
 
-        adv_f = tk.LabelFrame(root, text="Secondary stat weights", fg="blue"); adv_f.grid(row=next_row, column=0, columnspan=4, padx=10, sticky="ew"); next_row+=1
+        adv_f = tk.LabelFrame(root, text="Secondary stat weights", fg="blue"); adv_f.grid(row=current_row, column=0, columnspan=4, padx=10, sticky="ew"); current_row+=1
 
-        tk.Label(root, text="Targets are always met first, these weights just set which combination is shown", font=('Arial', 8, "italic"),fg="gray").grid(row=next_row, columnspan=4); next_row+=1
+        tk.Label(root, text="Targets are always met first, these weights just set which combination is shown", font=('Arial', 8, "italic"),fg="gray").grid(row=current_row, columnspan=4); current_row+=1
 
         
         # New Legend Label
@@ -307,11 +305,11 @@ class ArkGridGUI:
         #solve button
 
         self.solve_btn = tk.Button(root, text="SOLVE OPTIMAL GRID", bg="green", fg="white", font=('Arial', 10, 'bold'), command=self.start_solve)
-        self.solve_btn.grid(row=next_row, columnspan=4, pady=10, sticky="ew", padx=20); next_row+=1
+        self.solve_btn.grid(row=current_row, columnspan=4, pady=10, sticky="ew", padx=20); current_row+=1
 
         #stop button
         self.stop_btn = tk.Button(root, text="STOP (Shows best found by this point)", bg="red", fg="white", font=('Arial', 10, 'bold'),command=self.stop_solve, state="disabled")
-        self.stop_btn.grid(row=next_row, columnspan=4, pady=5, sticky="ew", padx=20); next_row+=1
+        self.stop_btn.grid(row=current_row, columnspan=4, pady=5, sticky="ew", padx=20); current_row+=1
 
     # --- UI HELPER FUNCTIONS ---
     def update_rarity(self, idx, name, val, lbl=None):
