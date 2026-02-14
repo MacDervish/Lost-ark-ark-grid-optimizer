@@ -14,8 +14,14 @@ def solve_logic(cores, gems, targets, priorities, callback, timeout=2, stop_chec
     
     counts = Counter(gem_fingerprints)
 
-    # Sort by points first (highest points = most valuable for meeting targets)
-    distinct_gems = sorted(counts.keys(), key=lambda x: (-x[1], -x[0]))
+    #calculate a priority score for each gem
+    def calculate_prioity_score(gem_data):
+        score = (priorities.get(gem_data[2],0) * int(gem_data[3]) + 
+                 priorities.get(gem_data[4],0) * int(gem_data[5]))
+        return score
+
+    # Sort by highest points first, willpower cost second, priority score third
+    distinct_gems = sorted(counts.keys(), key=lambda x: (-x[1], -x[0], calculate_prioity_score(x)))
     
     gem_types = [(g, counts[g]) for g in distinct_gems]
 
@@ -80,28 +86,11 @@ def solve_logic(cores, gems, targets, priorities, callback, timeout=2, stop_chec
         gem_data, available_qty = gem_types[type_idx]
         wp, pts = gem_data[0], gem_data[1]
 
-        
-
-        #  OPTIMIZATION: Calculate remaining points potential from future gems
-        # remaining_pts_potential = sum(gem_types[j][0][1] * gem_types[j][1] for j in range(type_idx + 1, len(gem_types)))
-        
-        # Early exit if we can't possibly meet targets
-        # can_meet_targets = True
-        # for i in range(num_cores):
-        #     if pt_sums[i] + remaining_pts_potential < targets[i]:
-        #         can_meet_targets = False
-        #         break
-        
-        # if not can_meet_targets:
-        #     return
-        
-
         # Calculate max we can place based on both slot and WP constraints
         max_possible = [
             min(available_qty, 4 - slot_counts[i], (cores[i] - wp_sums[i]) // wp if wp > 0 else available_qty)
             for i in range(num_cores)
         ]
-
 
 
         for q0 in range(max_possible[0] + 1):
@@ -412,7 +401,7 @@ class ArkGridGUI:
             messagebox.showerror("Error", f"No gems available for {current_mode}!")
             return
 
-
+        
         self.solve_btn.config(state="disabled")
         self.stop_btn.config(state="normal")
         self.stop_requested=False
@@ -426,6 +415,23 @@ class ArkGridGUI:
         self.combo_label.config(text=f"Checked: 0 | Valid: 0")
         self.update_timer()
         p = {k: v.get() for k, v in self.prios.items()}
+
+        # debugging sorting problem
+        # def calculate_prioity_score(gem_data):
+        #     score = (p.get(gem_data[2],0) * int(gem_data[3]) + 
+        #             p.get(gem_data[4],0) * int(gem_data[5]))
+        #     return score
+        
+        # gem_buffer = []
+        # for g in filtered_gems:
+        #     gem_buffer.append((g['wp'], g['pts'], g['eff1'], g['eff1_lvl'], g['eff2'], g['eff2_lvl']))
+    
+        # eeeee = Counter(gem_buffer)
+
+        # gem_check = sorted(eeeee.keys(), key=lambda x: (-x[1], -x[0], calculate_prioity_score(x)))
+        # for i in gem_check:
+        #     print(f"{i} + Priority: {calculate_prioity_score(i)}\n")
+
         timeout = self.timeout_var.get()  
         t = threading.Thread(target=solve_logic, args=([c.get() for c in self.core_vars], list(filtered_gems), [t.get() for t in self.target_vars], p, self.show_res, timeout, lambda: self.stop_requested))
         t.daemon = True; t.start()
